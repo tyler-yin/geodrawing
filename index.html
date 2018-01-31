@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.11/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.11/addons/p5.dom.min.js"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.41.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.41.0/mapbox-gl.css' rel='stylesheet'/>
+  </head>
+  <body>
+    <div id="map">
+
+    </div>
+    <script>
+
+        var x, y;
+        var x2, y2;
+
+        var mapimg;
+
+        var initBool;
+        var touchBool;
+        var drawSwitch;
+
+
+        var latitudeStart;
+        var longitudeStart;
+
+        // Broad Art Center
+        // var latitudeStart = 34.07594;
+        // var longitudeStart = -118.440840;
+
+        // 424 Veteran
+        // var latitudeStart = 34.069326;
+        // var longitudeStart = -118.454402;
+
+        var zoom = 16.5;
+        var boundOffset = 0.0034209125;
+
+        var options = {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        };
+
+        var points = [];
+        var radius;
+        var flux;
+        var angle;
+        var drawColor;
+
+        function setup() {
+          createCanvas(windowWidth, windowHeight);
+          imageMode(CENTER);
+          noStroke();
+          fill(255);
+
+          initBool = true;
+          touchBool = false;
+          drawSwitch = true;
+
+          if (!navigator.geolocation) {
+            alert("this device does not support geolocation");
+          }
+          navigator.geolocation.getCurrentPosition(getPosition, null, options);
+
+          radius = 40;
+          angle = 0;
+          flux = 0;
+          // drawColor = 'maroon';
+          drawColor = 'white';
+
+        }
+
+        function getPosition(position) {
+
+          latitudeStart = position.coords.latitude;
+          longitudeStart = position.coords.longitude;
+
+          mapboxgl.accessToken = 'pk.eyJ1IjoidHlsZXJ5aW4iLCJhIjoiY2o5ajM5aG05MTdlMDJxcGdwbjBid3BsOCJ9.TqkBaaxpSWzLsbPckVMXog';
+          var map = new mapboxgl.Map({
+            container: 'map', // container id
+            style: 'mapbox://styles/tyleryin/cj9nhssug3i5a2srtc7i39vpg', // MERCER
+            // style: 'mapbox://styles/tyleryin/cja1psusw01t82sl9qs3fiz9n', // KIPPLE
+            center: [longitudeStart, latitudeStart],
+            zoom: 16.5, // starting zoom
+          });
+          map.scrollZoom.disable();
+
+
+          lat = latitudeStart;
+          lon = longitudeStart;
+          y = map(position.coords.latitude, (lat-boundOffset), (lat+boundOffset), height, 0);
+          x = map(position.coords.longitude, (lon-boundOffset), (lon+boundOffset), 0, width);
+        }
+
+        function updatePosition(position) {
+          // text("latitude = "+nf(position.coords.latitude, 3, 6), 20, 50);
+          // text("longitude = "+nf(position.coords.longitude, 3, 6), 20, 150);
+
+          lat = latitudeStart;
+          lon = longitudeStart;
+          y2 = map(position.coords.latitude, (lat-boundOffset), (lat+boundOffset), height, 0);
+          x2 = map(position.coords.longitude, (lon-boundOffset), (lon+boundOffset), 0, width);
+          var newPoint = [x, y];
+          points.push(newPoint);
+        }
+
+        function draw() {
+          clear();
+
+          // LOCATION MARKER
+          stroke(drawColor);
+          strokeWeight(2);
+          noFill();
+
+          flux = 2.5*sin(angle);
+          angle += 0.15;
+          ellipse(x, y, radius, radius);
+
+          if (touchBool == true) {
+            if (radius > 30) {
+              radius--;
+            }
+          }
+
+          if (touchBool == false) {
+            if (radius < 39) {
+              radius++;
+              angle = 0;
+            }
+            radius = 40 + flux;
+          }
+
+
+
+          // UPDATE POSITION
+          if (touchBool == true) {
+            navigator.geolocation.getCurrentPosition(updatePosition, null, options);
+            if(x < x2) {
+              x++;
+            }
+            if(x > x2) {
+              x--;
+            }
+            if(y < y2) {
+              y++;
+            }
+            if(y > y2) {
+              y--;
+            }
+          }
+
+          // DRAW ELLIPSES
+          strokeWeight(1);
+          fill(drawColor);
+          stroke(drawColor);
+          for (var i=0; i<points.length; i++) {
+            ellipse(points[i][0], points[i][1], 7, 7);
+          }
+
+          // // DRAW LINES
+          // strokeWeight(7);
+          // fill(255);
+          // stroke(255);
+          // if (points.length >= 2) {
+          //   for (var i=0; i<points.length-1; i++) {
+          //     line(points[i][0], points[i][1], points[i+1][0], points[i+1][1]);
+          //   }
+          // }
+        }
+
+        function touchStarted() {
+          if (initBool == false) {
+            x = x2;
+            y = y2;
+          }
+          if (drawSwitch == true) {
+            touchBool = true;
+          } else {
+            touchBool = false;
+          }
+        }
+
+        function touchEnded() {
+          initBool = false;
+
+          x = x2;
+          y = y2;
+
+          if (drawSwitch == true) {
+            drawSwitch = false;
+          } else {
+            drawSwitch = true;
+          }
+        }
+
+    </script>
+    <style>
+    #map {
+      position: absolute;
+      height: 100%;
+      width: 100%;
+    }
+
+    canvas {
+      position: absolute;
+    }
+    </style>
+  </body>
+</html>
